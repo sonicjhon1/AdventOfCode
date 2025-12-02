@@ -1,0 +1,24 @@
+default_job = "run"
+
+[jobs.run]
+command = ["cargo", "run"]
+watch = ["src", "Cargo.toml"]
+need_stdout = true
+allow_warnings = true
+background = false
+on_change_strategy = "kill_then_restart"
+
+[jobs.clippy]
+command = [
+    "cargo",
+    "clippy",
+    "--all-targets",
+    "--all-features",
+    "--",
+    "-D",
+    "warnings",
+]
+watch = ["src", "Cargo.toml"]
+
+[keybindings]
+p = "pause"

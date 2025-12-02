@@ -1,0 +1,35 @@
+cargo-features = ["profile-rustflags"]
+
+[workspace]
+resolver = "3"
+members = ["aoc2025"]
+
+[workspace.package]
+authors = ["sonicjhon1"]
+edition = "2024"
+repository = "https://github.com/sonicjhon1/AdventOfCode"
+
+[workspace.dependencies]
+
+[workspace.lints.clippy]
+needless_return = "allow"
+type_complexity = "allow"
+
+[profile.dev]
+opt-level = 1
+
+# Enable high optimizations for dependencies, but not for our code:
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+opt-level = 'z'
+lto = true
+strip = true
+incremental = false
+panic = "abort"
+debug = false
+
+[profile.native]
+inherits = "release"
+rustflags = ["-Ctarget-cpu=native"]
