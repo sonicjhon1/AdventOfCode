@@ -11,23 +11,40 @@ const INPUT_1: &str = include_str!("2025_02_input_1.txt");
 const INPUT_2: &str = include_str!("2025_02_input_2.txt");
 
 fn main() {
-    init_tracing_debug();
+    init_tracing();
 
     {
         assert!(!ProductID::from_string("55").unwrap().is_valid_part_1());
         assert!(!ProductID::from_string("6464").unwrap().is_valid_part_1());
         assert!(!ProductID::from_string("123123").unwrap().is_valid_part_1());
         assert!(ProductID::from_string("0101").is_err());
+
+        assert!(
+            !ProductID::from_string("12341234")
+                .unwrap()
+                .is_valid_part_2()
+        );
+        assert!(
+            !ProductID::from_string("123123123")
+                .unwrap()
+                .is_valid_part_2()
+        );
+        assert!(
+            !ProductID::from_string("1212121212")
+                .unwrap()
+                .is_valid_part_2()
+        );
     }
 
     {
         let solution = solution(INPUT_TEST);
-        let Solution { part_1, .. } = solution;
+        let Solution { part_1, part_2 } = solution;
         assert_eq!(part_1, 1227775554);
+        assert_eq!(part_2, 4174379265);
     }
 
     solution(INPUT_1);
-    // solution(INPUT_2);
+    solution(INPUT_2);
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash, Display)]
@@ -35,6 +52,7 @@ fn main() {
 pub struct Solution {
     /// Sum of invalid ProductIDs (digit repeated twice)
     pub part_1: u64,
+    /// Sum of invalid ProductIDs (digit repeated atleast twice)
     pub part_2: u64,
 }
 
@@ -88,6 +106,32 @@ impl ProductID {
 
         return true;
     }
+
+    fn is_valid_part_2(&self) -> bool {
+        let text = self.to_string();
+        let len = text.len();
+
+        if len == 0 {
+            return false;
+        }
+
+        return !(1..len).into_par_iter().any(|i| {
+            let left = text.split_at(i).0;
+
+            if !len.is_multiple_of(i) {
+                return false
+            }
+
+            let n_repeat = len.div_euclid(i);
+            let left_repeated = left.repeat(n_repeat);
+
+            debug!(
+                "Text {text}; len {len}; i {i}; n_repeat {n_repeat}; left {left}; left_repeated {left_repeated}",
+            );
+
+            return left_repeated == text;
+        });
+    }
 }
 
 fn solution(text_input: &str) -> Solution {
@@ -98,15 +142,15 @@ fn solution(text_input: &str) -> Solution {
         part_2: 0,
     };
 
-    solution.part_1 = text_input
+    let (acc_part_1, acc_part_2): (Vec<_>, Vec<_>) = text_input
         .lines()
-        .collect::<Vec<&str>>()
+        .collect::<Vec<_>>()
         .join("")
         .split(',')
         .par_bridge()
         .into_par_iter()
         .fold(
-            || 0,
+            || (0, 0),
             |mut acc, product_id_text| {
                 debug!("Product ID text: {product_id_text}");
 
@@ -128,24 +172,34 @@ fn solution(text_input: &str) -> Solution {
                     last: last_id,
                 };
 
-                acc += product_id_range
+                let (acc_part_1, acc_part_2): (Vec<_>, Vec<_>) = product_id_range
                     .into_par_iter()
                     .fold(
-                        || 0,
+                        || (0, 0),
                         |mut acc, product_id: ProductID| {
                             if !product_id.is_valid_part_1() {
-                                acc += *product_id;
+                                acc.0 += *product_id;
+                            }
+
+                            if !product_id.is_valid_part_2() {
+                                acc.1 += *product_id;
                             }
 
                             return acc;
                         },
                     )
-                    .sum::<u64>();
+                    .unzip();
+
+                acc.0 += acc_part_1.into_par_iter().sum::<u64>();
+                acc.1 += acc_part_2.into_par_iter().sum::<u64>();
 
                 return acc;
             },
         )
-        .sum();
+        .unzip();
+
+    solution.part_1 = acc_part_1.into_par_iter().sum();
+    solution.part_2 = acc_part_2.into_par_iter().sum();
 
     info!("{solution}");
     return solution;
