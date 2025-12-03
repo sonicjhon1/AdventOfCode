@@ -12,6 +12,7 @@ repository = "https://github.com/sonicjhon1/AdventOfCode"
 [workspace.dependencies]
 # Common deps
 derive_more = { version = "2.1", features = ["full"] }
+rayon = { version = "1.11" }
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 
