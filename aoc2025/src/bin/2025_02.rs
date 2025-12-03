@@ -14,22 +14,22 @@ fn main() {
     init_tracing();
 
     {
-        assert!(!ProductID::from_string("55").unwrap().is_valid_part_1());
-        assert!(!ProductID::from_string("6464").unwrap().is_valid_part_1());
-        assert!(!ProductID::from_string("123123").unwrap().is_valid_part_1());
-        assert!(ProductID::from_string("0101").is_err());
+        debug_assert!(!ProductID::from_string("55").unwrap().is_valid_part_1());
+        debug_assert!(!ProductID::from_string("6464").unwrap().is_valid_part_1());
+        debug_assert!(!ProductID::from_string("123123").unwrap().is_valid_part_1());
+        debug_assert!(ProductID::from_string("0101").is_err());
 
-        assert!(
+        debug_assert!(
             !ProductID::from_string("12341234")
                 .unwrap()
                 .is_valid_part_2()
         );
-        assert!(
+        debug_assert!(
             !ProductID::from_string("123123123")
                 .unwrap()
                 .is_valid_part_2()
         );
-        assert!(
+        debug_assert!(
             !ProductID::from_string("1212121212")
                 .unwrap()
                 .is_valid_part_2()
@@ -39,8 +39,8 @@ fn main() {
     {
         let solution = solution(INPUT_TEST);
         let Solution { part_1, part_2 } = solution;
-        assert_eq!(part_1, 1227775554);
-        assert_eq!(part_2, 4174379265);
+        debug_assert_eq!(part_1, 1227775554);
+        debug_assert_eq!(part_2, 4174379265);
     }
 
     solution(INPUT_1);
