@@ -1,10 +1,9 @@
 #![feature(int_roundings)]
 
-use std::fmt::Display;
-
 use aoc2025::prelude::*;
 use derive_more::{Deref, DerefMut, Display};
 use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
+use std::fmt::Display;
 
 const INPUT_TEST: &str = include_str!("2025_02_input_test.txt");
 const INPUT_1: &str = include_str!("2025_02_input_1.txt");
