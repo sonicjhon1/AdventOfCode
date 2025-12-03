@@ -1,5 +1,3 @@
-#![feature(int_roundings)]
-
 use aoc2025::prelude::*;
 use derive_more::{Deref, DerefMut, Display};
 use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
