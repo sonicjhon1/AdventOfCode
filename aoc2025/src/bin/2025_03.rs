@@ -123,34 +123,22 @@ impl<const N: usize> BatteryJoltage<N> {
             BatteryJoltage(bank_iter.by_ref().take(N).collect_array::<N>().unwrap());
 
         bank_iter.fold(starting_joltage, |mut acc_joltage, value| {
-            let (min_i, min_value) = acc_joltage
-                .into_par_iter()
-                .enumerate()
-                .min_by_key(|(_, value)| *value)
-                .unwrap();
-
             let smaller_i = acc_joltage
                 .array_windows::<2>()
                 .into_iter()
                 .enumerate()
-                .find(|(_, [a, b])| a < b);
+                .find_map(|(i, [a, b])| (a < b).then_some(i));
 
-            debug!(
-                "acc_joltage: {acc_joltage}; value: {value}; min_i {min_i}; min_value {min_value}"
-            );
+            debug!("acc_joltage: {acc_joltage}; value: {value}");
 
-            if let Some((smaller_i, _)) = smaller_i
-                && smaller_i + 1 != N
-            {
+            if let Some(smaller_i) = smaller_i {
                 acc_joltage.copy_within((smaller_i + 1)..N, smaller_i);
                 acc_joltage[N - 1] = value;
 
                 debug!("smaller_i {smaller_i}");
-            } else if min_value < value || ((min_i + 1) != N && min_value < acc_joltage[min_i + 1])
-            {
-                acc_joltage.copy_within((min_i + 1)..N, min_i);
+            } else if acc_joltage[N - 1] < value {
                 acc_joltage[N - 1] = value;
-            }
+            };
 
             debug!("acc_joltage: {acc_joltage}");
 
