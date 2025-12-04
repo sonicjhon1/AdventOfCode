@@ -1,4 +1,3 @@
-#![feature(iter_array_chunks)]
 #![feature(exact_length_collection)]
 #![feature(array_windows)]
 
