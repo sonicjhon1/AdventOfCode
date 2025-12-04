@@ -4,8 +4,7 @@ use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 use std::fmt::Display;
 
 const INPUT_TEST: &str = include_str!("2025_02_input_test.txt");
-const INPUT_1: &str = include_str!("2025_02_input_1.txt");
-const INPUT_2: &str = include_str!("2025_02_input_2.txt");
+const INPUT: &str = include_str!("2025_02_input.txt");
 
 fn main() {
     init_tracing();
@@ -40,8 +39,7 @@ fn main() {
         debug_assert_eq!(part_2, 4174379265);
     }
 
-    solution(INPUT_1);
-    solution(INPUT_2);
+    solution(INPUT);
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash, Display)]

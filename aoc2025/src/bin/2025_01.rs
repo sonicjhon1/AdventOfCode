@@ -4,8 +4,7 @@ use aoc2025::prelude::*;
 use derive_more::Display;
 
 const INPUT_TEST: &str = include_str!("2025_01_input_test.txt");
-const INPUT_1: &str = include_str!("2025_01_input_1.txt");
-const INPUT_2: &str = include_str!("2025_01_input_1.txt");
+const INPUT: &str = include_str!("2025_01_input.txt");
 
 fn main() {
     init_tracing();
@@ -17,8 +16,7 @@ fn main() {
         assert_eq!(part_2, 6);
     }
 
-    solution(INPUT_1);
-    solution(INPUT_2);
+    solution(INPUT);
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash, Display)]
