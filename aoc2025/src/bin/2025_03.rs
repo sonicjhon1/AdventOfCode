@@ -1,8 +1,8 @@
-#![feature(exact_length_collection)]
 #![feature(array_windows)]
 
 use aoc2025::prelude::*;
 use derive_more::{Deref, DerefMut, Display};
+use itertools::Itertools;
 use rayon::{
     iter::{
         IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
