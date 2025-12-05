@@ -13,6 +13,10 @@ repository = "https://github.com/sonicjhon1/AdventOfCode"
 # Common deps
 derive_more = { version = "2.1", features = ["full"] }
 itertools = { version = "0.14" }
+parking_lot = { version = "0.12", features = [
+    "hardware-lock-elision",
+    "nightly",
+] }
 rayon = { version = "1.11" }
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
