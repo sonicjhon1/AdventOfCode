@@ -11,6 +11,7 @@ repository = "https://github.com/sonicjhon1/AdventOfCode"
 
 [workspace.dependencies]
 # Common deps
+dashmap = { version = "6.1.0", features = ["inline", "rayon"] }
 derive_more = { version = "2.1", features = ["full"] }
 itertools = { version = "0.14" }
 parking_lot = { version = "0.12", features = [

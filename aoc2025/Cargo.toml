@@ -6,6 +6,7 @@ edition.workspace = true
 repository.workspace = true
 
 [dependencies]
+dashmap = { workspace = true }
 derive_more = { workspace = true }
 itertools = { workspace = true }
 parking_lot = { workspace = true }
