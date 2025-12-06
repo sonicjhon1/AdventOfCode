@@ -1,11 +1,10 @@
 use aoc2025::prelude::*;
+use dashmap::DashMap;
 use derive_more::{Deref, DerefMut, Display};
-use parking_lot::Mutex;
 use rayon::{
-    iter::{IntoParallelRefMutIterator, ParallelBridge, ParallelIterator},
+    iter::{ParallelBridge, ParallelIterator},
     str::ParallelString,
 };
-use std::{collections::HashMap, sync::Arc};
 
 const INPUT_TEST: &str = include_str!("2025_04_input_test.txt");
 const INPUT: &str = include_str!("2025_04_input.txt");
@@ -66,9 +65,8 @@ fn solution(text_input: &str) -> Solution {
     return solution;
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deref, DerefMut, Display)]
-#[display("{_0:?}")]
-pub struct Grid(pub HashMap<(usize, usize), StuffKind>);
+#[derive(Clone, Debug, Deref, DerefMut)]
+pub struct Grid(pub DashMap<(usize, usize), StuffKind>);
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash, Display)]
 pub enum StuffKind {
@@ -80,7 +78,7 @@ pub enum StuffKind {
 
 impl Grid {
     pub fn from_lines(lines: &str) -> Self {
-        let map = Arc::new(Mutex::new(HashMap::new()));
+        let map = DashMap::new();
 
         lines
             .lines()
@@ -89,7 +87,6 @@ impl Grid {
             .for_each(|(pos_y, line)| {
                 line.par_char_indices().for_each(|(pos_x, c)| {
                     if map
-                        .lock()
                         .insert((pos_x, pos_y), StuffKind::from_char(c).unwrap())
                         .is_some()
                     {
@@ -98,7 +95,7 @@ impl Grid {
                 });
             });
 
-        return Self((*(*map).lock()).clone());
+        return Self(map);
     }
 
     pub fn count_adjacent(&self, (pos_x, pos_y): (usize, usize)) -> u8 {
@@ -170,12 +167,14 @@ impl Grid {
         let cloned_grid = self.clone();
 
         self.par_iter_mut()
-            .filter(|(pos, kind)| {
-                if **kind != StuffKind::PaperRoll {
+            .filter(|guard| {
+                let (pos, kind) = guard.pair();
+
+                if *kind != StuffKind::PaperRoll {
                     return false;
                 };
 
-                let count = cloned_grid.count_adjacent(**pos);
+                let count = cloned_grid.count_adjacent(*pos);
 
                 if count >= 4 {
                     return false;
@@ -184,8 +183,8 @@ impl Grid {
                 debug!("take");
                 return true;
             })
-            .map(|(_, kind)| {
-                *kind = StuffKind::Empty;
+            .map(|mut guard| {
+                *guard.value_mut() = StuffKind::Empty;
             })
             .count() as _
     }
