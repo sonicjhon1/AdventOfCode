@@ -7,7 +7,7 @@ const INPUT_TEST: &str = include_str!("2025_06_input_test.txt");
 const INPUT: &str = include_str!("2025_06_input.txt");
 
 fn main() {
-    init_tracing_debug();
+    init_tracing();
 
     {
         let solution = solution(INPUT_TEST);
