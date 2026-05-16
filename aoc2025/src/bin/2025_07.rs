@@ -1,14 +1,15 @@
 use aoc2025::prelude::*;
+use dashmap::DashMap;
 use derive_more::{Deref, DerefMut, Display};
 use itertools::Itertools;
 use rayon::prelude::*;
-use std::{collections::HashMap, fmt::Display, sync::atomic::AtomicUsize};
+use std::fmt::Display;
 
 const INPUT_TEST: &str = include_str!("2025_07_input_test.txt");
 const INPUT: &str = include_str!("2025_07_input.txt");
 
 fn main() {
-    init_tracing_debug();
+    init_tracing();
 
     let Solution { part_1, part_2 } = solution(INPUT_TEST);
     debug_assert_eq!(part_1, 21);
@@ -35,7 +36,7 @@ fn solution(text_input: &str) -> Solution {
     let grid_map = GridMap::from_lines(text_input);
     let mut grid = Grid {
         classic_map: grid_map.clone(),
-        quantum_maps: vec![grid_map],
+        quantum_map: grid_map,
     };
 
     let mut beam_split_counter = 0;
@@ -51,29 +52,18 @@ fn solution(text_input: &str) -> Solution {
         }
     }
 
-    // let finished_maps_counter = AtomicUsize::new(0);
-    // loop {
-    //     grid.map_simulate_part_2(&finished_maps_counter);
+    let mut finished_maps_counter = 0;
+    let mut skip_cache = DashMap::new();
+    {
+        grid.map_simulate_part_2(&mut finished_maps_counter, &mut skip_cache);
 
-    //     for (map_index, map) in grid.quantum_maps.iter().enumerate() {
-    //         debug!("\n---Simulated map ({map_index})---\n{map}");
-    //     }
+        debug!("Maps finished: ({})", finished_maps_counter);
 
-    //     debug!(
-    //         "Maps finished: ({}/{})",
-    //         finished_maps_counter.load(std::sync::atomic::Ordering::Relaxed),
-    //         grid.quantum_maps.len()
-    //     );
-
-    //     if grid.quantum_maps.is_empty() {
-    //         debug!("Maps are fully simulated.");
-    //         break;
-    //     }
-    // }
+        debug!("Maps are fully simulated.");
+    }
 
     solution.part_1 = beam_split_counter;
-    // solution.part_2 = finished_maps_counter.load(std::sync::atomic::Ordering::Relaxed);
-    solution.part_2 = grid.solve_part_2();
+    solution.part_2 = finished_maps_counter;
 
     info!("{solution}");
     return solution;
@@ -82,7 +72,7 @@ fn solution(text_input: &str) -> Solution {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Grid {
     classic_map: GridMap,
-    quantum_maps: Vec<GridMap>,
+    quantum_map: GridMap,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Deref, DerefMut)]
@@ -110,66 +100,12 @@ impl Grid {
         self.classic_map.simulate_classic(beam_split_counter);
     }
 
-    pub fn map_simulate_part_2(&mut self, finished_maps_counter: &AtomicUsize) {
-        self.quantum_maps = self
-            .quantum_maps
-            .par_iter()
-            .flat_map(|quantum_map| quantum_map.simulate_quantum(finished_maps_counter))
-            .collect();
-    }
-
-    pub fn solve_part_2(&mut self) -> usize {
-        self.quantum_maps
-            .iter()
-            .map(|map| {
-                let rows = map.len();
-                let cols = map.first().expect("Map should contain atleast 1 row").len();
-
-                let start_col = map[0]
-                    .iter()
-                    .position(|token| *token == GridToken::BeamEnter)
-                    .expect("First row should contain a (BeamEnter)");
-
-                let mut cache = HashMap::new();
-
-                fn dfs(
-                    grid: &GridMap,
-                    rows: usize,
-                    cols: usize,
-                    row: usize,
-                    col: usize,
-                    cache: &mut HashMap<(usize, usize), usize>,
-                ) -> usize {
-                    if row >= rows || col >= cols {
-                        return 1;
-                    }
-
-                    if let Some(v) = cache.get(&(row, col)) {
-                        return *v;
-                    }
-
-                    let token = grid[row][col];
-
-                    let res = match token {
-                        GridToken::Splitter => {
-                            dfs(grid, rows, cols, row + 1, col - 1, cache)
-                                + dfs(grid, rows, cols, row + 1, col + 1, cache)
-                        }
-
-                        GridToken::Empty | GridToken::Beam | GridToken::BeamEnter => {
-                            dfs(grid, rows, cols, row + 1, col, cache)
-                        }
-
-                        _ => 0,
-                    };
-
-                    cache.insert((row, col), res);
-                    res
-                }
-
-                dfs(map, rows, cols, 1, start_col, &mut cache)
-            })
-            .sum()
+    pub fn map_simulate_part_2(
+        &self,
+        finished_maps_counter: &mut usize,
+        skip_cache: &mut DashMap<(usize, usize), usize>,
+    ) {
+        *finished_maps_counter = self.quantum_map.simulate_quantum(0, 0, skip_cache);
     }
 }
 
@@ -287,13 +223,35 @@ impl GridMap {
         *self = new_map;
     }
 
-    fn simulate_quantum(&self, finished_maps_counter: &AtomicUsize) -> Vec<Self> {
-        let mut new_quantum_maps = Vec::with_capacity(3);
+    fn simulate_quantum(
+        &self,
+        skip_x: usize,
+        skip_y: usize,
+        skip_cache: &mut DashMap<(usize, usize), usize>,
+    ) -> usize {
+        if let Some(finished_maps_counter) = skip_cache.get(&(skip_x, skip_y)) {
+            debug!(
+                "\n---Cached map skip_x: ({skip_x}); skip_y: ({skip_y})---\n{}",
+                self
+            );
+            return *finished_maps_counter;
+        }
 
-        for ((tokens_bottom_y, tokens_bottom), (tokens_y, tokens)) in
-            self.iter().enumerate().rev().tuple_windows()
+        debug!(
+            "\n---Simulated map skip_x: ({skip_x}); skip_y: ({skip_y})---\n{}",
+            self
+        );
+
+        let mut finished_maps_counter = 0;
+
+        'outer_loop: for ((tokens_bottom_y, tokens_bottom), (tokens_y, tokens)) in self
+            .iter()
+            .enumerate()
+            .skip(skip_y.saturating_sub(1))
+            .rev()
+            .tuple_windows()
         {
-            for (token_x, token) in tokens.iter().enumerate() {
+            for (token_x, token) in tokens.iter().enumerate().skip(skip_x.saturating_sub(1)) {
                 let token_bottom = tokens_bottom
                     .get(token_x)
                     .expect("Grid should have the same length");
@@ -324,7 +282,19 @@ impl GridMap {
                                         new_quantum_map.propagate_beam_to_empties();
                                         new_quantum_map[tokens_bottom_y][token_x] =
                                             GridToken::SplitterLeft;
-                                        new_quantum_maps.push(new_quantum_map);
+
+                                        let branch_finished_maps_counter = new_quantum_map
+                                            .simulate_quantum(
+                                                token_bottom_left_x,
+                                                tokens_bottom_y,
+                                                skip_cache,
+                                            );
+
+                                        skip_cache.insert(
+                                            (token_bottom_left_x, tokens_bottom_y),
+                                            branch_finished_maps_counter,
+                                        );
+                                        finished_maps_counter += branch_finished_maps_counter;
                                     }
                                     GridToken::BeamEnter
                                     | GridToken::Beam
@@ -352,7 +322,19 @@ impl GridMap {
                                         new_quantum_map.propagate_beam_to_empties();
                                         new_quantum_map[tokens_bottom_y][token_x] =
                                             GridToken::SplitterRight;
-                                        new_quantum_maps.push(new_quantum_map);
+
+                                        let branch_finished_maps_counter = new_quantum_map
+                                            .simulate_quantum(
+                                                token_bottom_right_x,
+                                                tokens_bottom_y,
+                                                skip_cache,
+                                            );
+
+                                        skip_cache.insert(
+                                            (token_bottom_right_x, tokens_bottom_y),
+                                            branch_finished_maps_counter,
+                                        );
+                                        finished_maps_counter += branch_finished_maps_counter;
                                     }
                                     GridToken::BeamEnter
                                     | GridToken::Beam
@@ -361,6 +343,8 @@ impl GridMap {
                                     | GridToken::SplitterRight => {}
                                 }
                             };
+
+                            break 'outer_loop;
                         }
                         GridToken::Beam | GridToken::SplitterLeft | GridToken::SplitterRight => {}
                     },
@@ -372,11 +356,11 @@ impl GridMap {
             }
         }
 
-        if new_quantum_maps.is_empty() {
-            finished_maps_counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        if self.last().unwrap().contains(&GridToken::Beam) {
+            finished_maps_counter += 1;
         }
 
-        return new_quantum_maps;
+        return finished_maps_counter;
     }
 
     fn propagate_beam_to_empties(&mut self) {
@@ -428,11 +412,20 @@ impl GridMap {
 
 impl Display for GridMap {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for tokens in self.iter() {
+        for (y, tokens) in self.iter().enumerate() {
             writeln!(f)?;
 
+            write!(f, "{:02} ", y + 1)?;
             for token in tokens.iter() {
-                write!(f, "{token} ")?;
+                write!(f, "{token}  ")?;
+            }
+        }
+
+        if let Some(first_row) = self.first() {
+            writeln!(f)?;
+            write!(f, "   ")?;
+            for x in 0..first_row.len() {
+                write!(f, "{:02} ", x + 1)?;
             }
         }
 
