@@ -18,7 +18,7 @@ parking_lot = { version = "0.12", features = [
     "hardware-lock-elision",
     "nightly",
 ] }
-rayon = { version = "1.11" }
+rayon = { version = "1.12" }
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 
