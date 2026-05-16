@@ -108,7 +108,8 @@ impl Database {
         let mut set = vec![];
 
         sorted.into_iter().for_each(|freshes| {
-            if let Some(overlap_fresh) = set.par_iter_mut().find_any(|f| freshes.is_overlapping(f)) {
+            if let Some(overlap_fresh) = set.par_iter_mut().find_any(|f| freshes.is_overlapping(f))
+            {
                 let start = freshes.start().min(overlap_fresh.start());
                 let end = freshes.end().max(overlap_fresh.end());
 

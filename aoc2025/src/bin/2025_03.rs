@@ -1,5 +1,3 @@
-#![feature(array_windows)]
-
 use aoc2025::prelude::*;
 use derive_more::{Deref, DerefMut, Display};
 use itertools::Itertools;
@@ -125,7 +123,6 @@ impl<const N: usize> BatteryJoltage<N> {
         bank_iter.fold(starting_joltage, |mut acc_joltage, value| {
             let smaller_i = acc_joltage
                 .array_windows::<2>()
-                .into_iter()
                 .enumerate()
                 .find_map(|(i, [a, b])| (a < b).then_some(i));
 
